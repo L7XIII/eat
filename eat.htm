@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>P5JS</title>
+    <script src="p5.min.js"></script>
+    <script src="p5.collide2D.min.js"></script>
+    <style>
+        html{
+            height: 100%;
+        }
+        body{
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas{
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        function setup(){
+            createCanvas(960, 540);
+        }
+
+        class Player{
+            constructor(s, sp, x, y){
+                this._size = s;
+                this._color = 0;
+                this._speed = sp;
+                this._x = x;
+                this._y = y;
+                this._points = 0;
+            }
+
+            get size(){
+                return this._size;
+            }
+            get color(){
+                return this._color;
+            }
+            get speed(){
+                return this._speed;
+            }
+            get x(){
+                return this._x;
+            }
+            get y(){
+                return this._y;
+            }
+            get points(){
+                return this._points;
+            }
+
+            set size(s){
+                this._size = s;
+            }
+            set color(c){
+                if (c > 360) c = 0;
+                this._color = c;
+            }
+            set speed(s){
+                this._speed = s;
+            }
+            set x(x){
+                this._x = x;
+            }
+            set y(y){
+                this._y = y;
+            }
+            set points(p){
+                this._points = p;
+            }
+
+            draw(){
+                push();
+                stroke('#000');
+                strokeWeight(1);
+                colorMode(HSL, 360);
+                fill(this.color, 200, 200);
+                this.color++;
+                circle(this.x, this.y, this.size);
+                pop();
+            }
+            moveUp(){
+                if(!this.checkWalls('up')) this.y -= this.speed;
+            }
+            moveDown(){
+                if (!this.checkWalls('down')) this.y += this.speed;
+            }
+            moveLeft(){
+                if (!this.checkWalls('left')) this.x -= this.speed;
+            }
+            moveRight(){
+                if (!this.checkWalls('right')) this.x += this.speed;
+            }
+            eat(s){
+                this.size += s/25;
+                this.speed += 0.15;
+                this.points++;
+            }
+            die(){
+                this.size = 0;
+            }
+            checkWalls(side){
+                switch(side){
+                    case 'up':
+                        return this.y < this.size / 2 + 2;
+                        break;
+                    case 'down':
+                        return this.y > 540 - this.size / 2 - 2;
+                        break;
+                    case 'left':
+                        return this.x < this.size / 2 + 2;
+                        break;
+                    case 'right':
+                        return this.x > 960 - this.size / 2 - 2;
+                        break;
+                }
+            }
+        }
+
+        class Bot{
+            constructor() {
+                let s = true;
+                if (bots) bots.forEach(b => {
+                    if (b !== undefined){
+                        if(b.size < player.size) s = false;
+                    }
+                });
+                this._id = bots.length;
+                this._size = (s) ? randomInt(player.size/2, player.size-1) : randomInt(player.size/2, player.size*2);
+                this._color = color(randomInt(0, 255), randomInt(0, 255), randomInt(0, 255));
+                this._speed = randomInt(0, 10);
+                this._x = randomInt(0, 960);
+                this._y = randomInt(0, 540);
+                if(this.checkCollision()) this.x = -this.x;
+            }
+
+            get id(){
+                return this._id;
+            }
+            get size() {
+                return this._size;
+            }
+            get color() {
+                return this._color;
+            }
+            get speed() {
+                return this._speed;
+            }
+            get x() {
+                return this._x;
+            }
+            get y() {
+                return this._y;
+            }
+
+            set size(s) {
+                this._size = s;
+            }
+            set color(c) {
+                this._color = c;
+            }
+            set speed(s) {
+                this._speed = s;
+            }
+            set x(x) {
+                this._x = x;
+            }
+            set y(y) {
+                this._y = y;
+            }
+
+            draw() {
+                push();
+                stroke('#000');
+                strokeWeight(1);
+                fill(this.color, 200, 200);
+                circle(this.x, this.y, this.size);
+                pop();
+                this.randomMove();
+                if(this.checkCollision()) this.eat();
+            }
+            checkCollision(){
+                if(collideCircleCircle(this.x, this.y, this.size, player.x, player.y, player.size)) return true;
+            }
+            eat(){
+                if(this.size <= player.size){
+                    player.eat(this.size);
+                    bots[this.id] = undefined;
+                    bots.push(new Bot());
+                } else {
+                    player.die();
+                }
+            }
+            checkWalls(side) {
+                switch (side) {
+                    case 'up':
+                        return this.y < this.size / 2 + 2;
+                        break;
+                    case 'down':
+                        return this.y > 540 - this.size / 2 - 2;
+                        break;
+                    case 'left':
+                        return this.x < this.size / 2 + 2;
+                        break;
+                    case 'right':
+                        return this.x > 960 - this.size / 2 - 2;
+                        break;
+                }
+            }
+            randomMove(){
+                if(randomInt(1,3) === 2){
+                    if (!this.checkWalls('left') && !this.checkWalls('right')) this.x += randomInt(0,2);
+                } else {
+                    if (!this.checkWalls('left') && !this.checkWalls('right')) this.x -= randomInt(0, 2);
+                }
+                if (randomInt(1, 3) === 2) {
+                    if (!this.checkWalls('up') && !this.checkWalls('down')) this.y += randomInt(0, 2);
+                } else {
+                    if (!this.checkWalls('up') && !this.checkWalls('down')) this.y -= randomInt(0, 2);
+                }
+            }
+        }
+
+        const player = new Player(30, 2, 100, 100);
+        let bots = [];
+        setTimeout(()=>{
+            for(let i = 0; i < 5; i++) bots.push(new Bot);
+        }, 500);
+
+        function draw(){
+            background(255);
+            player.draw();
+            if(bots) bots.forEach(b=>{
+                if(b !== undefined) b.draw();
+            });
+            push();
+            textSize(32);
+            textAlign(CENTER);
+            text(player.points, 480, 32);
+            if(player.size === 0){
+                push();
+                colorMode(RGB, 255, 255, 255, 1);
+                fill(0,0,0,0.75);
+                rect(0,0,960,540);
+                pop();
+                fill(255);
+                text('DEAD', 960/2, 540/2);
+            }
+            pop();
+
+            if(keyIsDown(87)) player.moveUp();
+            if(keyIsDown(83)) player.moveDown();
+            if(keyIsDown(65)) player.moveLeft();
+            if(keyIsDown(68)) player.moveRight();
+        }
+
+        function randomInt(min, max) {
+            min = Math.ceil(min);
+            max = Math.floor(max);
+            return Math.floor(Math.random() * (max - min)) + min;
+        }
+    </script>
+</body>
+</html>
